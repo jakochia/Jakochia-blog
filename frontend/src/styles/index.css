@@ -1,0 +1,125 @@
+/* ============================================================ */
+/* FRONTEND src/styles/index.css */
+/* ============================================================ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-primary: 37, 99, 235;
+    --color-primary-dark: 30, 58, 138;
+    /* Reduced white – soft off-white/light gray backgrounds */
+    --color-bg: 248, 249, 250;          /* was 255,255,255 */
+    --color-bg-secondary: 241, 243, 245; /* was 249,250,251 */
+    --color-text: 17, 24, 39;
+    --color-text-secondary: 107, 114, 128;
+    --color-border: 220, 224, 230;      /* slightly softer */
+  }
+
+  .dark {
+    --color-bg: 10, 10, 10;
+    --color-bg-secondary: 26, 26, 26;
+    --color-text: 243, 244, 246;
+    --color-text-secondary: 156, 163, 175;
+    --color-border: 55, 65, 81;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-text antialiased;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+  }
+
+  ::selection {
+    @apply bg-blue-500/30 text-white;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    @apply bg-neutral-100 dark:bg-neutral-900;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    @apply bg-neutral-400 dark:bg-neutral-700 rounded-full;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-neutral-500 dark:bg-neutral-600;
+  }
+
+  /* Code blocks */
+  pre {
+    @apply rounded-lg overflow-x-auto;
+  }
+
+  code {
+    @apply font-mono text-sm;
+  }
+
+  /* Prose for article content */
+  .prose {
+    @apply max-w-none;
+  }
+
+  .prose h1 {
+    @apply text-3xl font-bold mt-8 mb-4;
+  }
+  .prose h2 {
+    @apply text-2xl font-bold mt-8 mb-3;
+  }
+  .prose h3 {
+    @apply text-xl font-semibold mt-6 mb-2;
+  }
+  .prose h4 {
+    @apply text-lg font-semibold mt-4 mb-2;
+  }
+  .prose p {
+    @apply text-base leading-relaxed mb-4;
+  }
+  .prose ul {
+    @apply list-disc pl-6 mb-4 space-y-1;
+  }
+  .prose ol {
+    @apply list-decimal pl-6 mb-4 space-y-1;
+  }
+  .prose li {
+    @apply leading-relaxed;
+  }
+  .prose blockquote {
+    @apply border-l-4 border-blue-500 pl-4 py-1 my-4 text-neutral-700 dark:text-neutral-300;
+  }
+  .prose a {
+    @apply text-blue-500 hover:text-blue-600 dark:text-blue-400 dark:hover:text-blue-300 underline;
+  }
+  .prose img {
+    @apply rounded-lg my-6 max-w-full h-auto;
+  }
+  .prose table {
+    @apply w-full border-collapse my-4;
+  }
+  .prose th, .prose td {
+    @apply border border-neutral-300 dark:border-neutral-700 px-4 py-2 text-left;
+  }
+  .prose th {
+    @apply bg-neutral-100 dark:bg-neutral-800 font-semibold;
+  }
+  .prose pre {
+    @apply bg-neutral-900 text-neutral-100 p-4 rounded-lg my-4 overflow-x-auto;
+  }
+  .prose code {
+    @apply bg-neutral-100 dark:bg-neutral-800 px-1.5 py-0.5 rounded text-sm;
+  }
+  .prose pre code {
+    @apply bg-transparent p-0 text-sm;
+  }
+}

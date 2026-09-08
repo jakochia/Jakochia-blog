@@ -2,19 +2,21 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import { connectDB } from './config/database.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { apiRateLimiter } from './middleware/rateLimiter.js';
 import routes from './routes/index.js';
 
 const app = express();
 
+// ✅ Fix: Trust proxy – required for Render (behind reverse proxy)
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
-// ✅ Updated CORS configuration for cross-domain cookies
+// ✅ CORS configuration for cross-domain cookies
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'https://blog.jakochia.co.ke',
@@ -25,7 +27,7 @@ const allowedOrigins = [
 
 app.use(cors({
   origin: allowedOrigins,
-  credentials: true,                    // ✅ Required for cookies
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));

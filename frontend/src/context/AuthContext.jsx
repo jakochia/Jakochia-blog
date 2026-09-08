@@ -1,9 +1,5 @@
-// ============================================================
-// FRONTEND src/context/AuthContext.jsx
-// ============================================================
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { api, setAuthToken, removeAuthToken } from '../services/api';
+import { api } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -12,38 +8,36 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem('adminToken');
-    if (token) {
-      setAuthToken(token);
-      fetchAdmin();
-    } else {
-      setLoading(false);
-    }
+    // ✅ Check authentication status on mount
+    const checkAuth = async () => {
+      try {
+        const res = await api.get('/admin/auth/me');
+        setAdmin(res.data.admin);
+      } catch (error) {
+        // Not authenticated – ignore
+        setAdmin(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkAuth();
   }, []);
 
-  const fetchAdmin = async () => {
-    try {
-      const res = await api.get('/admin/auth/me');
-      setAdmin(res.data.admin);
-    } catch (error) {
-      console.error('Auth error:', error);
-      localStorage.removeItem('adminToken');
-      removeAuthToken();
-      setAdmin(null);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const login = async (email, password) => {
-    const res = await api.post('/admin/auth/login', { email, password });
-    if (res.data.success) {
-      localStorage.setItem('adminToken', res.data.token);
-      setAuthToken(res.data.token);
-      setAdmin(res.data.admin);
-      return { success: true };
+    try {
+      const res = await api.post('/admin/auth/login', { email, password });
+      if (res.data.success) {
+        // ✅ Token is in HTTP-only cookie – no localStorage needed
+        setAdmin(res.data.admin);
+        return { success: true };
+      }
+      return { success: false, error: res.data.error };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.error || 'Login failed',
+      };
     }
-    return { success: false, error: res.data.error };
   };
 
   const logout = async () => {
@@ -52,8 +46,6 @@ export const AuthProvider = ({ children }) => {
     } catch (error) {
       console.error('Logout error:', error);
     }
-    localStorage.removeItem('adminToken');
-    removeAuthToken();
     setAdmin(null);
   };
 
@@ -71,5 +63,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
-export default AuthContext;

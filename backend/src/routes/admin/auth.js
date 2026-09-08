@@ -1,7 +1,3 @@
-// ============================================================
-// BACKEND src/routes/admin/auth.js
-// ============================================================
-
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import { Admin } from '../../models/Admin.js';
@@ -45,6 +41,7 @@ router.post('/setup', async (req, res) => {
   }
 });
 
+// Login
 router.post('/login', loginRateLimiter, validate(loginValidations), async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -84,12 +81,12 @@ router.post('/login', loginRateLimiter, validate(loginValidations), async (req, 
       { expiresIn: '7d' }
     );
 
-    // Set cookie
+    // ✅ Set cookie with proper cross-domain settings
     res.cookie('adminToken', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      secure: true,                    // ✅ Required for HTTPS (Render/Vercel)
+      sameSite: 'none',                // ✅ Allows cross-site requests
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
     });
 
@@ -117,6 +114,7 @@ router.post('/login', loginRateLimiter, validate(loginValidations), async (req, 
   }
 });
 
+// Logout
 router.post('/logout', authenticate, async (req, res) => {
   try {
     await AuditLog.create({
@@ -127,10 +125,11 @@ router.post('/logout', authenticate, async (req, res) => {
       userAgent: req.headers['user-agent'],
     });
 
+    // ✅ Clear cookie with same settings
     res.clearCookie('adminToken', {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
       path: '/',
     });
 
@@ -140,6 +139,7 @@ router.post('/logout', authenticate, async (req, res) => {
   }
 });
 
+// Get current admin
 router.get('/me', authenticate, async (req, res) => {
   try {
     res.json({

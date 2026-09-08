@@ -1,7 +1,3 @@
-// ============================================================
-// BACKEND src/app.js
-// ============================================================
-
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -18,10 +14,18 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
-// CORS
+// ✅ Updated CORS configuration for cross-domain cookies
+const allowedOrigins = [
+  process.env.FRONTEND_URL,
+  'https://blog.jakochia.co.ke',
+  'https://jakochia-blog.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+].filter(Boolean); // Remove undefined values
+
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true,
+  origin: allowedOrigins,
+  credentials: true,                    // ✅ Required for cookies
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
@@ -38,8 +42,17 @@ app.use('/api', apiRateLimiter);
 app.use('/api', routes);
 
 // Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+app.get('/', (req, res) => {
+  res.json({
+    status: 'ok',
+    message: 'Jakochia API is running',
+    endpoints: {
+      posts: '/api/posts',
+      categories: '/api/categories',
+      projects: '/api/projects',
+      admin: '/api/admin',
+    },
+  });
 });
 
 // Error handling

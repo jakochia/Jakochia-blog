@@ -74,23 +74,35 @@ router.post('/login', loginRateLimiter, validate(loginValidations), async (req, 
     admin.lastLogin = new Date();
     await admin.save();
 
-    // Create JWT
+    // Create JWT token
     const token = jwt.sign(
       { id: admin._id, email: admin.email, role: admin.role },
       process.env.JWT_SECRET,
       { expiresIn: '7d' }
     );
 
-    // ✅ Set cookie with proper cross-domain settings
+    // ✅ Set cookie (fallback, but frontend will use token from response body)
     res.cookie('adminToken', token, {
       httpOnly: true,
-      secure: true,                    // ✅ Required for HTTPS (Render/Vercel)
-      sameSite: 'none',                // ✅ Allows cross-site requests
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      secure: true,
+      sameSite: 'none',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
       path: '/',
     });
 
-    // Log the login
+    // ✅ Send token in response body (primary method for frontend)
+    res.json({
+      success: true,
+      token, // <-- Critical: send token here
+      admin: {
+        id: admin._id,
+        email: admin.email,
+        name: admin.name,
+        role: admin.role,
+      },
+    });
+
+    // Log login
     await AuditLog.create({
       admin: admin._id,
       action: 'login',
@@ -98,16 +110,6 @@ router.post('/login', loginRateLimiter, validate(loginValidations), async (req, 
       details: { email: admin.email },
       ipAddress: req.ip,
       userAgent: req.headers['user-agent'],
-    });
-
-    res.json({
-      success: true,
-      admin: {
-        id: admin._id,
-        email: admin.email,
-        name: admin.name,
-        role: admin.role,
-      },
     });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -125,7 +127,6 @@ router.post('/logout', authenticate, async (req, res) => {
       userAgent: req.headers['user-agent'],
     });
 
-    // ✅ Clear cookie with same settings
     res.clearCookie('adminToken', {
       httpOnly: true,
       secure: true,
@@ -139,7 +140,7 @@ router.post('/logout', authenticate, async (req, res) => {
   }
 });
 
-// Get current admin
+// Get current admin (protected)
 router.get('/me', authenticate, async (req, res) => {
   try {
     res.json({

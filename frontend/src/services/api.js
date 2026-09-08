@@ -4,27 +4,32 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export const api = axios.create({
   baseURL: API_URL,
-  withCredentials: true,          // ✅ Required for cookies
+  withCredentials: true, // Required for cookies (for logout)
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// ✅ No Authorization header – cookies handle auth
+// Request interceptor – no need to add Authorization header here because we set it globally in AuthContext, but we keep it as fallback
 api.interceptors.request.use(
   (config) => {
-    // The cookie is sent automatically by the browser
+    const token = localStorage.getItem('adminToken');
+    if (token && !config.headers.Authorization) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for error handling
+// Response interceptor – handle 401 globally
 api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Redirect to login if unauthorized
+      // Clear token and redirect to login if on admin page
+      localStorage.removeItem('adminToken');
+      delete api.defaults.headers.common['Authorization'];
       if (window.location.pathname.startsWith('/admin')) {
         window.location.href = '/admin/login';
       }

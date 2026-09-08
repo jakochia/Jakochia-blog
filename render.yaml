@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: jakochia-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      # ... other env vars
+
+  - type: static
+    name: jakochia-blog
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishPath: dist
+    envVars:
+      - key: VITE_API_URL
+        value: https://jakochia-backend.onrender.com/api

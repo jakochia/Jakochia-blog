@@ -80,15 +80,13 @@ app.get('/', (req, res) => {
   });
 });
 
-// ✅ FIX 9: RSS Feed (if mounted)
-// app.use('/rss.xml', rssRouter); // Uncomment if you have RSS routes
+import rssRouter from './routes/public/rss.js';
+import sitemapRouter from './routes/public/sitemap.js';
 
-// ✅ FIX 10: Sitemap (if mounted)
-// app.use('/sitemap.xml', sitemapRouter); // Uncomment if you have sitemap routes
+// ... after all other app.use() calls, before error handlers:
 
-// ✅ FIX 11: Error handling
-app.use(notFound);
-app.use(errorHandler);
+app.use('/rss.xml', rssRouter);
+app.use('/sitemap.xml', sitemapRouter);
 
 // ✅ FIX 12: Optional – log all requests in development
 if (process.env.NODE_ENV === 'development') {

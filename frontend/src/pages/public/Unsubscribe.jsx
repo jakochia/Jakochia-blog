@@ -48,7 +48,7 @@ const Unsubscribe = () => {
         <p className="text-text-secondary text-sm">
           You will no longer receive emails from Jakochia Blog.
         </p>
-        <Link to="/" className="inline-block mt-6 text-primary-400 hover:underline">
+        <Link to="" className="inline-block mt-6 text-primary-400 hover:underline">
           ← Return to Blog
         </Link>
       </div>

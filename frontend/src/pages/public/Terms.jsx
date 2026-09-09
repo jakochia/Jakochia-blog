@@ -36,7 +36,7 @@ const Terms = () => {
           </a>.
         </p>
 
-        <Link to="/" className="inline-block mt-6 text-primary-400 hover:underline">
+        <Link to="https://blog.jakochia.co.ke/unsubscribe" className="inline-block mt-6 text-primary-400 hover:underline">
           ← Back to Home
         </Link>
       </div>

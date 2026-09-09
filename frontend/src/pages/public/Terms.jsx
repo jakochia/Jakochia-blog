@@ -1,31 +1,46 @@
 import React from 'react';
-import Layout from '../../components/common/Layout';
+import { Link } from 'react-router-dom';
 
 const Terms = () => {
   return (
-    <Layout>
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h1 className="text-3xl font-bold mb-6 text-gradient-blue">Terms of Service</h1>
-        <div className="prose dark:prose-invert max-w-none">
-          <p className="text-text-secondary">Last updated: {new Date().toLocaleDateString()}</p>
-          
-          <h2>1. Acceptance of Terms</h2>
-          <p>By using this website, you agree to these terms. If you do not agree, please do not use the site.</p>
-          
-          <h2>2. Content Ownership</h2>
-          <p>All content on this site (articles, images, code snippets, etc.) is the property of Newton Asha (Jakochia) unless otherwise stated. You may not reproduce, distribute, or commercialize any content without permission.</p>
-          
-          <h2>3. User Comments</h2>
-          <p>Comments are moderated. We reserve the right to delete any comment that is abusive, spam, or off-topic.</p>
-          
-          <h2>4. Disclaimer</h2>
-          <p>The information on this site is provided "as is" for educational and informational purposes. No warranty is made about the accuracy or completeness of the content.</p>
-          
-          <h2>5. Changes</h2>
-          <p>We may update these terms from time to time. Continued use of the site constitutes acceptance of the updated terms.</p>
-        </div>
+    <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+      <h1 className="text-3xl font-bold mb-6 text-gradient-blue">Terms of Use</h1>
+      <div className="prose dark:prose-invert max-w-none">
+        <p><strong>Last updated:</strong> {new Date().toLocaleDateString()}</p>
+        <p>Welcome to Jakochia Blog. By using this website, you agree to the following terms.</p>
+
+        <h2>Content</h2>
+        <ul>
+          <li>All content is for informational purposes only.</li>
+          <li>We do not guarantee accuracy or completeness.</li>
+          <li>Content may be updated or removed at any time.</li>
+        </ul>
+
+        <h2>User Conduct</h2>
+        <ul>
+          <li>Be respectful in comments and interactions.</li>
+          <li>Do not post spam, harmful links, or offensive content.</li>
+          <li>We reserve the right to moderate or remove comments.</li>
+        </ul>
+
+        <h2>Intellectual Property</h2>
+        <p>All content (text, images, code) is owned by Newton Asha unless otherwise noted. Unauthorized reproduction is prohibited.</p>
+
+        <h2>Limitation of Liability</h2>
+        <p>We are not liable for any damages arising from the use of this website.</p>
+
+        <p>
+          If you have any questions, contact us at{' '}
+          <a href="mailto:ombuyanewton@gmail.com" className="text-primary-500 hover:text-primary-600">
+            ombuyanewton@gmail.com
+          </a>.
+        </p>
+
+        <Link to="/" className="inline-block mt-6 text-primary-400 hover:underline">
+          ← Back to Home
+        </Link>
       </div>
-    </Layout>
+    </div>
   );
 };
 

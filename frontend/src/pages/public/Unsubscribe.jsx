@@ -13,7 +13,6 @@ const Unsubscribe = () => {
   const [status, setStatus] = useState({ type: '', text: '' });
   const [loading, setLoading] = useState(false);
 
-  // If email is provided in URL (from email link), auto-unsubscribe
   useEffect(() => {
     if (emailParam) {
       handleUnsubscribe(emailParam);
@@ -44,7 +43,7 @@ const Unsubscribe = () => {
     handleUnsubscribe(email);
   };
 
-  // If success, show success message
+  // Success state – rendered inside Layout
   if (status.type === 'success') {
     return (
       <Layout>

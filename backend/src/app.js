@@ -6,18 +6,42 @@ import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { apiRateLimiter } from './middleware/rateLimiter.js';
 import routes from './routes/index.js';
 
+// Import sitemap and RSS routes
+import sitemapRouter from './routes/public/sitemap.js';
+import rssRouter from './routes/public/rss.js';
+
 const app = express();
 
-// ✅ FIX 1: Trust proxy – required for Render (behind reverse proxy)
+// ============================================
+// 1. Trust proxy – required for Render
+// ============================================
 app.set('trust proxy', 1);
 
-// ✅ FIX 2: Security headers
+// ============================================
+// 2. Security headers (Helmet)
+// ============================================
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "https://vercel.live", "https://vercel.com"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      imgSrc: ["'self'", "data:", "https://*"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      connectSrc: ["'self'", "https://jakochia-backend.onrender.com", "https://blog.jakochia.co.ke"],
+      frameSrc: ["'self'", "https://vercel.live"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
 }));
 
-// ✅ FIX 3: CORS configuration – allows cross-domain cookies
+// ============================================
+// 3. CORS – allow cross-origin requests with credentials
+// ============================================
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'https://blog.jakochia.co.ke',
@@ -26,11 +50,10 @@ const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
   'http://127.0.0.1:5173',
-].filter(Boolean); // Remove undefined values
+].filter(Boolean);
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl)
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) {
       callback(null, true);
@@ -39,26 +62,42 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true,                    // ✅ Required for cookies
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
   exposedHeaders: ['Set-Cookie'],
 }));
 
-// ✅ FIX 4: Body parsers
+// ============================================
+// 4. Body parsers
+// ============================================
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// ✅ FIX 5: Cookie parser
+// ============================================
+// 5. Cookie parser
+// ============================================
 app.use(cookieParser());
 
-// ✅ FIX 6: Rate limiting
+// ============================================
+// 6. Rate limiting
+// ============================================
 app.use('/api', apiRateLimiter);
 
-// ✅ FIX 7: API routes
+// ============================================
+// 7. API routes
+// ============================================
 app.use('/api', routes);
 
-// ✅ FIX 8: Health check / root endpoint
+// ============================================
+// 8. Sitemap & RSS (directly at root)
+// ============================================
+app.use('/sitemap.xml', sitemapRouter);
+app.use('/rss.xml', rssRouter);
+
+// ============================================
+// 9. Health check / root endpoint
+// ============================================
 app.get('/', (req, res) => {
   res.json({
     status: 'ok',
@@ -80,15 +119,15 @@ app.get('/', (req, res) => {
   });
 });
 
-import rssRouter from './routes/public/rss.js';
-import sitemapRouter from './routes/public/sitemap.js';
+// ============================================
+// 10. Error handling (must be last)
+// ============================================
+app.use(notFound);
+app.use(errorHandler);
 
-// ... after all other app.use() calls, before error handlers:
-
-app.use('/rss.xml', rssRouter);
-app.use('/sitemap.xml', sitemapRouter);
-
-// ✅ FIX 12: Optional – log all requests in development
+// ============================================
+// 11. Optional – development logging
+// ============================================
 if (process.env.NODE_ENV === 'development') {
   app.use((req, res, next) => {
     console.log(`${req.method} ${req.url}`);

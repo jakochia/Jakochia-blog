@@ -218,7 +218,7 @@ export const buildNewsletterHtml = ({ subject, content, unsubscribeUrl = '', sit
     <div class="footer">
       <div class="social">
         <a href="https://github.com/jakochia" target="_blank">GitHub</a>
-        <a href="#" target="_blank">LinkedIn</a>
+        <a href="https://www.linkedin.com/in/newton-ombuya-776566356/" target="_blank">LinkedIn</a>
         <a href="${siteUrl}" target="_blank">Blog</a>
       </div>
       <p class="copyright">

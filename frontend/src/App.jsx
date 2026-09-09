@@ -40,7 +40,6 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        {/* ✅ Add future flags to silence React Router warnings */}
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
             {/* ==================== PUBLIC ROUTES ==================== */}
@@ -59,7 +58,7 @@ function App() {
             <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
             <Route path="/terms" element={<Layout><Terms /></Layout>} />
 
-            {/* Unsubscribe routes (query param, not token param) */}
+            {/* Unsubscribe routes – no Layout inside components */}
             <Route path="/unsubscribe" element={<Layout><Unsubscribe /></Layout>} />
             <Route path="/unsubscribe/success" element={<Layout><UnsubscribeSuccess /></Layout>} />
 

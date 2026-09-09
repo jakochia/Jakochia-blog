@@ -36,7 +36,7 @@ export const sendEmail = async ({ to, subject, htmlContent, plainText, unsubscri
     subject,
     content: htmlContent,
     unsubscribeUrl,
-    siteUrl: process.env.FRONTEND_URL || 'https://blog.jakochia.co.ke',
+    siteUrl: process.env.FRONTEND_URL || 'https://blog.jakochia.co.ke/unsubscribe',
   });
 
   const text = plainText || htmlContent.replace(/<[^>]*>/g, '');

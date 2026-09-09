@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider } from './context/AuthContext';
 import AdminRoute from './pages/AdminRoute';
@@ -18,7 +18,10 @@ import About from './pages/public/About';
 import Contact from './pages/public/Contact';
 import NewsletterPage from './pages/public/NewsletterPage';
 import Tutorials from './pages/public/Tutorials';
-
+import Privacy from './pages/public/Privacy';
+import Terms from './pages/public/Terms';
+import Unsubscribe from './pages/public/Unsubscribe';
+import UnsubscribeSuccess from './pages/public/UnsubscribeSuccess';
 
 // Admin pages
 import AdminLogin from './pages/admin/AdminLogin';
@@ -32,17 +35,15 @@ import AdminMedia from './pages/admin/AdminMedia';
 import AdminProjects from './pages/admin/AdminProjects';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminNewsletter from './pages/admin/AdminNewsletter';
-import Privacy from './pages/public/Privacy';
-import Terms from './pages/public/Terms';
-
 
 function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <BrowserRouter>
+        {/* ✅ Add future flags to silence React Router warnings */}
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <Routes>
-            {/* Public Routes */}
+            {/* ==================== PUBLIC ROUTES ==================== */}
             <Route path="/" element={<Layout><Home /></Layout>} />
             <Route path="/blog" element={<Layout><Blog /></Layout>} />
             <Route path="/blog/:slug" element={<Layout><Article /></Layout>} />
@@ -58,7 +59,11 @@ function App() {
             <Route path="/privacy" element={<Layout><Privacy /></Layout>} />
             <Route path="/terms" element={<Layout><Terms /></Layout>} />
 
-            {/* Admin Routes */}
+            {/* Unsubscribe routes (query param, not token param) */}
+            <Route path="/unsubscribe" element={<Layout><Unsubscribe /></Layout>} />
+            <Route path="/unsubscribe/success" element={<Layout><UnsubscribeSuccess /></Layout>} />
+
+            {/* ==================== ADMIN ROUTES ==================== */}
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
             <Route path="/admin/dashboard" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
@@ -71,7 +76,8 @@ function App() {
             <Route path="/admin/projects" element={<AdminRoute><AdminProjects /></AdminRoute>} />
             <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
             <Route path="/admin/newsletter" element={<AdminRoute><AdminNewsletter /></AdminRoute>} />
-            {/* 404 */}
+
+            {/* ==================== 404 ==================== */}
             <Route path="*" element={
               <Layout>
                 <div className="min-h-[60vh] flex items-center justify-center">

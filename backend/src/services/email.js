@@ -36,10 +36,9 @@ export const sendEmail = async ({ to, subject, htmlContent, plainText, unsubscri
     subject,
     content: htmlContent,
     unsubscribeUrl,
-    siteUrl: 'https://jakochia.com', // replace with your actual domain
+    siteUrl: process.env.FRONTEND_URL || 'https://blog.jakochia.co.ke',
   });
 
-  // Plain text fallback
   const text = plainText || htmlContent.replace(/<[^>]*>/g, '');
 
   try {
@@ -61,14 +60,17 @@ export const sendEmail = async ({ to, subject, htmlContent, plainText, unsubscri
 /**
  * Send newsletter to multiple recipients (batch)
  */
-export const sendNewsletter = async ({ recipients, subject, htmlContent, plainText = '', unsubscribeUrl = '' }) => {
+export const sendNewsletter = async ({ recipients, subject, htmlContent, plainText = '' }) => {
   const results = [];
   const batchSize = 10;
+  const siteUrl = process.env.FRONTEND_URL || 'https://blog.jakochia.co.ke';
 
   for (let i = 0; i < recipients.length; i += batchSize) {
     const batch = recipients.slice(i, i + batchSize);
     const batchPromises = batch.map(async (email) => {
       try {
+        // Generate unique unsubscribe link for each recipient
+        const unsubscribeUrl = `${siteUrl}/unsubscribe?email=${encodeURIComponent(email)}`;
         const result = await sendEmail({
           to: email,
           subject,

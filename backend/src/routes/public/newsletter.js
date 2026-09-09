@@ -117,6 +117,58 @@ router.post('/unsubscribe', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+})
+
+// ... existing imports
+
+// POST /api/newsletter/unsubscribe (already exists)
+router.post('/unsubscribe', async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const subscriber = await Subscriber.findOne({ email });
+    if (!subscriber) {
+      return res.status(404).json({ error: 'Email not found' });
+    }
+
+    subscriber.status = 'unsubscribed';
+    subscriber.unsubscribedAt = new Date();
+    await subscriber.save();
+
+    res.json({
+      success: true,
+      message: 'Unsubscribed successfully.',
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GET /api/newsletter/unsubscribe?email=... (for direct link from emails)
+router.get('/unsubscribe', async (req, res) => {
+  try {
+    const { email } = req.query;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const subscriber = await Subscriber.findOne({ email });
+    if (!subscriber) {
+      return res.status(404).json({ error: 'Email not found' });
+    }
+
+    subscriber.status = 'unsubscribed';
+    subscriber.unsubscribedAt = new Date();
+    await subscriber.save();
+
+    // Redirect to a success page
+    res.redirect(`${process.env.FRONTEND_URL || 'http://blog.jakochia.co.ke'}/unsubscribe/success?email=${encodeURIComponent(email)}`);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 export default router;

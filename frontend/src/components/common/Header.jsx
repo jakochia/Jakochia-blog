@@ -33,27 +33,69 @@ const Header = () => {
 
   return (
     <header
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         isScrolled
-          ? 'glass border-b border-border/50 shadow-premium'
-          : 'bg-transparent'
+          ? 'bg-[#F8FAFC]/90 backdrop-blur-xl border-b border-[#2563EB]/10 shadow-[0_8px_32px_rgba(37,99,235,0.08)]'
+          : 'bg-[#F8FAFC]/80 backdrop-blur-sm'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
-          {/* Logo – blue/cyan gradient, no purple */}
-          <Link to="/" className="flex items-center space-x-2 group">
-            <div className="relative w-8 h-8">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-lg blur-sm group-hover:blur-md transition-all duration-300"></div>
-              <div className="relative w-8 h-8 bg-gradient-to-r from-blue-500 to-cyan-400 rounded-lg flex items-center justify-center text-white font-bold text-sm">
-                J
-              </div>
+          {/* Logo – Primary to Secondary gradient */}
+          <Link to="/" className="flex items-center gap-3 group">
+            <div className="relative w-9 h-9 flex-shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:rotate-[-3deg]">
+              <svg
+                className="w-full h-full"
+                viewBox="0 0 100 100"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-label="Jakochia Logo"
+              >
+                <defs>
+                  <linearGradient id="headerLogoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#2563EB" />
+                    <stop offset="100%" stopColor="#1E1B4B" />
+                  </linearGradient>
+                  <filter id="headerLogoShadow" x="-10%" y="-10%" width="120%" height="120%">
+                    <feDropShadow dx="0" dy="4" stdDeviation="6" floodColor="#1E1B4B" floodOpacity="0.3" />
+                  </filter>
+                </defs>
+                <rect width="100" height="100" rx="24" fill="url(#headerLogoGrad)" filter="url(#headerLogoShadow)" />
+                <rect width="100" height="50" rx="24" fill="white" fillOpacity="0.15" clipPath="url(#headerClip)" />
+                <clipPath id="headerClip"><rect width="100" height="100" rx="24" /></clipPath>
+                {/* J stroke – Accent Orange */}
+                <path
+                  d="M 32 35 H 68 V 65 C 68 73, 62 82, 50 82 H 42 C 30 82, 24 73, 24 65 V 56"
+                  stroke="#EA580C"
+                  strokeWidth="12"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  filter="url(#headerLogoShadow)"
+                />
+                <path
+                  d="M 32 35 H 68 V 65 C 68 73, 62 82, 50 82 H 42 C 30 82, 24 73, 24 65 V 56"
+                  stroke="#F8FAFC"
+                  strokeOpacity="0.2"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  transform="translate(-1.5, -1.5)"
+                />
+                <g fill="#EA580C" fillOpacity="0.7">
+                  <circle cx="68" cy="16" r="2.5" />
+                  <circle cx="76" cy="16" r="2.5" />
+                  <circle cx="84" cy="16" r="2.5" />
+                </g>
+              </svg>
+              {/* Glow ring on hover – Primary Blue */}
+              <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-r from-[#2563EB]/20 to-[#EA580C]/20 blur-xl -z-10" />
             </div>
-            <span className="text-xl font-display font-bold text-gradient group-hover:scale-105 transition-transform">
+
+            <span className="text-xl font-display font-bold bg-gradient-to-r from-[#2563EB] to-[#1E1B4B] bg-clip-text text-transparent group-hover:scale-105 transition-transform duration-300">
               JAKOCHIA
             </span>
-            <span className="text-xs text-text-secondary hidden sm:inline">|</span>
-            <span className="text-sm text-text-secondary hidden sm:inline font-light">
+            <span className="text-xs text-[#334155]/30 hidden sm:inline">|</span>
+            <span className="text-sm text-[#334155]/50 hidden sm:inline font-light tracking-wide">
               Blog
             </span>
           </Link>
@@ -64,26 +106,25 @@ const Header = () => {
               <Link
                 key={link.to}
                 to={link.to}
-                className="text-sm text-text-secondary hover:text-text transition-colors relative group"
+                className="text-sm text-[#334155] hover:text-[#2563EB] transition-colors duration-300 relative group"
               >
                 {link.label}
-                {/* Underline – blue to cyan */}
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-gradient-to-r from-blue-500 to-cyan-400 transition-all duration-300 group-hover:w-full"></span>
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-[#EA580C] transition-all duration-300 group-hover:w-full" />
               </Link>
             ))}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
               <ThemeToggle />
               {isAuthenticated && (
                 <>
                   <Link
                     to="/admin/dashboard"
-                    className="text-sm px-4 py-1.5 rounded-full bg-gradient-to-r from-blue-500 to-cyan-400 text-white font-medium hover:shadow-glow-blue transition-all"
+                    className="text-sm px-4 py-1.5 rounded-full bg-[#EA580C] text-white font-medium hover:shadow-[0_0_25px_rgba(234,88,12,0.4)] transition-all duration-300 hover:scale-105"
                   >
                     Dashboard
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="text-sm text-text-secondary hover:text-text transition-colors"
+                    className="text-sm text-[#334155] hover:text-[#EA580C] transition-colors duration-300"
                   >
                     Logout
                   </button>
@@ -97,7 +138,7 @@ const Header = () => {
             <ThemeToggle />
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="p-2 rounded-lg hover:bg-background-secondary transition-colors"
+              className="p-2 rounded-lg hover:bg-[#2563EB]/10 transition-colors duration-300 text-[#334155] hover:text-[#2563EB]"
               aria-label="Toggle menu"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -123,14 +164,14 @@ const Header = () => {
 
         {/* Mobile Menu */}
         {isMenuOpen && (
-          <div className="md:hidden py-4 border-t border-border/50 glass">
-            <nav className="flex flex-col space-y-3">
+          <div className="md:hidden py-4 border-t border-[#2563EB]/10 bg-[#F8FAFC]/95 backdrop-blur-xl rounded-b-2xl">
+            <nav className="flex flex-col space-y-2">
               {navLinks.map((link) => (
                 <Link
                   key={link.to}
                   to={link.to}
                   onClick={() => setIsMenuOpen(false)}
-                  className="text-sm text-text-secondary hover:text-text transition-colors px-3 py-2 rounded-lg hover:bg-background/50"
+                  className="text-sm text-[#334155] hover:text-[#2563EB] transition-colors duration-300 px-4 py-2 rounded-lg hover:bg-[#2563EB]/5"
                 >
                   {link.label}
                 </Link>
@@ -140,7 +181,7 @@ const Header = () => {
                   <Link
                     to="/admin/dashboard"
                     onClick={() => setIsMenuOpen(false)}
-                    className="text-sm text-blue-400 hover:text-blue-300 px-3 py-2 rounded-lg hover:bg-background/50"
+                    className="text-sm text-[#EA580C] hover:text-[#2563EB] px-4 py-2 rounded-lg hover:bg-[#2563EB]/5 transition-colors duration-300"
                   >
                     Dashboard
                   </Link>
@@ -149,7 +190,7 @@ const Header = () => {
                       setIsMenuOpen(false);
                       handleLogout();
                     }}
-                    className="text-sm text-text-secondary hover:text-text px-3 py-2 rounded-lg hover:bg-background/50 text-left"
+                    className="text-sm text-[#334155] hover:text-[#EA580C] px-4 py-2 rounded-lg hover:bg-[#2563EB]/5 transition-colors duration-300 text-left"
                   >
                     Logout
                   </button>

@@ -1,81 +1,45 @@
 import express from 'express';
 import { Post } from '../../models/Post.js';
-import { Category } from '../../models/Category.js';
-import { Tag } from '../../models/Tag.js';
 import { Project } from '../../models/Project.js';
+import { Category } from '../../models/Category.js';
 
 const router = express.Router();
 
-router.get('/sitemap.xml', async (req, res) => {
+router.get('/', async (req, res) => {
   try {
-    const [posts, categories, tags, projects] = await Promise.all([
-      Post.find({ status: 'published' }).select('slug updatedAt'),
-      Category.find().select('slug'),
-      Tag.find().select('slug'),
-      Project.find().select('slug'),
-    ]);
+    const siteUrl = process.env.FRONTEND_URL || 'https://blog.jakochia.co.ke';
+    const now = new Date().toISOString();
 
-    const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const posts = await Post.find({ status: 'published' }).select('slug updatedAt');
+    const projects = await Project.find().select('slug updatedAt');
+    const categories = await Category.find().select('slug');
 
     let sitemap = `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`;
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url><loc>${siteUrl}/</loc><lastmod>${now}</lastmod><priority>1.0</priority></url>
+  <url><loc>${siteUrl}/blog</loc><lastmod>${now}</lastmod><priority>0.9</priority></url>
+  <url><loc>${siteUrl}/projects</loc><lastmod>${now}</lastmod><priority>0.8</priority></url>
+  <url><loc>${siteUrl}/about</loc><lastmod>${now}</lastmod><priority>0.7</priority></url>
+  <url><loc>${siteUrl}/contact</loc><lastmod>${now}</lastmod><priority>0.6</priority></url>
+`;
 
-    // Static pages
-    const staticPages = ['', '/blog', '/projects', '/tutorials', '/about', '/contact', '/newsletter'];
-    for (const page of staticPages) {
-      sitemap += `
-  <url>
-    <loc>${baseUrl}${page}</loc>
-    <changefreq>weekly</changefreq>
-    <priority>${page === '' ? '1.0' : '0.8'}</priority>
-  </url>`;
-    }
+    posts.forEach(post => {
+      const lastmod = post.updatedAt ? new Date(post.updatedAt).toISOString() : now;
+      sitemap += `  <url><loc>${siteUrl}/blog/${post.slug}</loc><lastmod>${lastmod}</lastmod><priority>0.8</priority></url>\n`;
+    });
 
-    // Blog posts
-    for (const post of posts) {
-      sitemap += `
-  <url>
-    <loc>${baseUrl}/blog/${post.slug}</loc>
-    <lastmod>${new Date(post.updatedAt).toISOString().split('T')[0]}</lastmod>
-    <changefreq>monthly</changefreq>
-    <priority>0.9</priority>
-  </url>`;
-    }
+    projects.forEach(proj => {
+      const lastmod = proj.updatedAt ? new Date(proj.updatedAt).toISOString() : now;
+      sitemap += `  <url><loc>${siteUrl}/projects/${proj.slug}</loc><lastmod>${lastmod}</lastmod><priority>0.7</priority></url>\n`;
+    });
 
-    // Categories
-    for (const cat of categories) {
-      sitemap += `
-  <url>
-    <loc>${baseUrl}/categories/${cat.slug}</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
-  </url>`;
-    }
+    categories.forEach(cat => {
+      sitemap += `  <url><loc>${siteUrl}/categories/${cat.slug}</loc><lastmod>${now}</lastmod><priority>0.6</priority></url>\n`;
+    });
 
-    // Tags
-    for (const tag of tags) {
-      sitemap += `
-  <url>
-    <loc>${baseUrl}/tags/${tag.slug}</loc>
-    <changefreq>weekly</changefreq>
-    <priority>0.6</priority>
-  </url>`;
-    }
+    sitemap += `</urlset>`;
 
-    // Projects
-    for (const project of projects) {
-      sitemap += `
-  <url>
-    <loc>${baseUrl}/projects/${project.slug}</loc>
-    <changefreq>monthly</changefreq>
-    <priority>0.7</priority>
-  </url>`;
-    }
-
-    sitemap += `
-</urlset>`;
-
-    res.header('Content-Type', 'application/xml');
+    res.set('Content-Type', 'application/xml');
     res.send(sitemap);
   } catch (error) {
     console.error('Sitemap generation error:', error);

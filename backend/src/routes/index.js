@@ -10,8 +10,8 @@ import publicReactions from './public/reactions.js';
 import publicNewsletter from './public/newsletter.js';
 import publicSearch from './public/search.js';
 import publicContact from './public/contact.js';
-import publicChat from './public/chat.js';
-import publicChatMessages from './public/chatMessages.js';   // ← ADD THIS
+import publicChat from './public/chat.js';                    // ✅ AI Chat
+import publicChatMessages from './public/chatMessages.js';    // ✅ Human Chat
 
 // Admin routes
 import adminAuth from './admin/auth.js';
@@ -23,11 +23,11 @@ import adminMedia from './admin/media.js';
 import adminProjects from './admin/projects.js';
 import adminSettings from './admin/settings.js';
 import adminNewsletter from './admin/newsletter.js';
-import adminChatMessages from './admin/chatMessages.js';     // ← ADD THIS
+import adminChatMessages from './admin/chatMessages.js';
 
 const router = express.Router();
 
-// Public routes
+// ============ PUBLIC ROUTES ============
 router.use('/posts', publicPosts);
 router.use('/categories', publicCategories);
 router.use('/tags', publicTags);
@@ -37,10 +37,10 @@ router.use('/reactions', publicReactions);
 router.use('/newsletter', publicNewsletter);
 router.use('/search', publicSearch);
 router.use('/contact', publicContact);
-router.use('/chat', publicChat);
-router.use('/chat-messages', publicChatMessages);           // ← ADD THIS
+router.use('/ai/chat', publicChat);                        // ✅ AI Chat
+router.use('/chat-messages', publicChatMessages);          // ✅ Human Chat
 
-// Admin routes (protected)
+// ============ ADMIN ROUTES ============
 router.use('/admin/auth', adminAuth);
 router.use('/admin/dashboard', adminDashboard);
 router.use('/admin/posts', adminPosts);
@@ -50,6 +50,6 @@ router.use('/admin/media', adminMedia);
 router.use('/admin/projects', adminProjects);
 router.use('/admin/settings', adminSettings);
 router.use('/admin/newsletter', adminNewsletter);
-router.use('/admin/chat-messages', adminChatMessages);       // ← ADD THIS
+router.use('/admin/chat-messages', adminChatMessages);
 
 export default router;

@@ -3,25 +3,51 @@ import { body, validationResult } from 'express-validator';
 import rateLimit from 'express-rate-limit';
 import { ChatMessage } from '../../models/ChatMessage.js';
 import { sendEmail } from '../../services/email.js';
+import {
+  emitNewMessage,
+  emitConversationUpdate,
+} from '../../socket/socketHandler.js';
 
 const router = express.Router();
 
+// ============================================================
+// Rate limiters
+// ============================================================
 const messageRateLimiter = rateLimit({
   windowMs: 10 * 60 * 1000,
-  max: 5,
+  max: 20,
   message: { error: 'Too many messages. Please wait before sending another.' },
 });
 
-/**
- * Build admin notification email — matches Jakochia brand palette
- * Colors: #F8FAFC, #2563EB, #1E1B4B, #EA580C, #334155
- * Font: Inter (modern, elegant)
- */
+const readRateLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Too many requests. Please slow down.' },
+});
+
+// ============================================================
+// Helpers
+// ============================================================
+const isValidConversationId = (id) =>
+  typeof id === 'string' && id.length > 0 && id.length <= 100;
+
+const escapeHtml = (str) =>
+  String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+
+// ============================================================
+// Email notification template — Jakochia brand palette
+// Colors: #F8FAFC, #2563EB, #1E1B4B, #EA580C, #334155 · Font: Inter
+// ============================================================
 const buildNotificationHtml = ({ visitorName, visitorEmail, message }) => {
   const siteUrl = process.env.FRONTEND_URL || 'https://blog.jakochia.co.ke';
-  const safeName = visitorName || 'Anonymous';
-  const safeEmail = visitorEmail || 'Not provided';
-  const safeMessage = (message || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const safeName = escapeHtml(visitorName || 'Anonymous');
+  const safeEmail = escapeHtml(visitorEmail || 'Not provided');
+  const safeMessage = escapeHtml(message || '');
 
   return `
 <!DOCTYPE html>
@@ -65,12 +91,10 @@ const buildNotificationHtml = ({ visitorName, visitorEmail, message }) => {
         </tr>
       </table>
 
-      <!-- Message block with accent left border -->
       <div style="border-left:4px solid #EA580C; background:#F1F5F9; padding:16px 18px; border-radius:0 10px 10px 0;">
         <p style="margin:0; font-size:15px; line-height:1.7; color:#334155; white-space:pre-wrap;">${safeMessage}</p>
       </div>
 
-      <!-- CTA Button -->
       <div style="text-align:center; margin-top:28px;">
         <a href="${siteUrl}/admin/inbox"
            style="display:inline-block; background:#2563EB; color:#F8FAFC; padding:13px 32px; border-radius:50px; text-decoration:none; font-weight:600; font-size:15px; letter-spacing:0.3px;">
@@ -80,7 +104,6 @@ const buildNotificationHtml = ({ visitorName, visitorEmail, message }) => {
 
     </div>
 
-    <!-- Footer -->
     <div style="background-color:#F8FAFC; padding:18px 24px; text-align:center; border-top:1px solid #E2E8F0;">
       <p style="margin:0; font-size:12px; color:#94A3B8;">
         Automated notification from <strong style="color:#1E1B4B;">Jakochia Blog</strong> · Code. Build. Learn. Share.
@@ -94,14 +117,25 @@ const buildNotificationHtml = ({ visitorName, visitorEmail, message }) => {
   `;
 };
 
+// ============================================================
+// POST /api/chat-messages — visitor sends a message
+// ============================================================
 router.post(
   '/',
   messageRateLimiter,
   [
     body('conversationId').notEmpty().withMessage('Conversation ID is required'),
-    body('message').trim().notEmpty().withMessage('Message is required').isLength({ max: 2000 }),
+    body('message')
+      .trim()
+      .notEmpty()
+      .withMessage('Message is required')
+      .isLength({ max: 2000 })
+      .withMessage('Message too long (max 2000 chars)'),
     body('visitorName').optional().trim().isLength({ max: 100 }),
-    body('visitorEmail').optional({ checkFalsy: true }).isEmail().withMessage('Valid email required'),
+    body('visitorEmail')
+      .optional({ checkFalsy: true })
+      .isEmail()
+      .withMessage('Valid email required'),
   ],
   async (req, res) => {
     try {
@@ -112,47 +146,124 @@ router.post(
 
       const { conversationId, message, visitorName, visitorEmail } = req.body;
 
+      if (!isValidConversationId(conversationId)) {
+        return res.status(400).json({ error: 'Invalid conversation ID' });
+      }
+
+      let finalName = visitorName?.trim() || null;
+      let finalEmail = visitorEmail?.trim().toLowerCase() || null;
+
+      // If name or email missing, pull them from the latest message in this conversation
+      if (!finalName || !finalEmail) {
+        const existing = await ChatMessage.findOne({
+          conversationId,
+          sender: 'visitor',
+          $or: [
+            { visitorName: { $nin: [null, ''] } },
+            { visitorEmail: { $nin: [null, ''] } },
+          ],
+        }).sort({ createdAt: -1 });
+
+        if (existing) {
+          if (!finalName) finalName = existing.visitorName;
+          if (!finalEmail) finalEmail = existing.visitorEmail;
+        }
+      }
+
       const chatMessage = await ChatMessage.create({
         conversationId,
-        visitorName: visitorName?.trim(),
-        visitorEmail: visitorEmail?.trim().toLowerCase(),
+        visitorName: finalName,
+        visitorEmail: finalEmail,
         message: message.trim(),
         sender: 'visitor',
         ipAddress: req.ip,
         userAgent: req.headers['user-agent'],
       });
 
+      // Backfill name/email on any older messages missing them
+      if (finalName || finalEmail) {
+        const update = {};
+        if (finalName) update.visitorName = finalName;
+        if (finalEmail) update.visitorEmail = finalEmail;
+
+        await ChatMessage.updateMany(
+          {
+            conversationId,
+            sender: 'visitor',
+            $or: [
+              { visitorName: { $in: [null, ''] } },
+              { visitorEmail: { $in: [null, ''] } },
+            ],
+          },
+          { $set: update }
+        );
+      }
+
+      // Real-time emit
+      const io = req.app.get('io');
+      if (io) {
+        emitNewMessage(io, {
+          _id: chatMessage._id,
+          conversationId: chatMessage.conversationId,
+          visitorName: finalName,
+          visitorEmail: finalEmail,
+          message: chatMessage.message,
+          sender: chatMessage.sender,
+          read: chatMessage.read,
+          createdAt: chatMessage.createdAt,
+        });
+        emitConversationUpdate(io, conversationId);
+      }
+
+      // Email notification (fire and forget)
       if (process.env.EMAIL_USER) {
         sendEmail({
           to: process.env.ADMIN_EMAIL || process.env.EMAIL_USER,
-          subject: `💬 New message from ${visitorName || 'a visitor'}`,
-          htmlContent: buildNotificationHtml({ visitorName, visitorEmail, message }),
-        }).catch((err) => console.error('Email notification failed:', err.message));
+          subject: `💬 New message from ${finalName || 'a visitor'}`,
+          htmlContent: buildNotificationHtml({
+            visitorName: finalName,
+            visitorEmail: finalEmail,
+            message,
+          }),
+        }).catch((err) =>
+          console.error('Email notification failed:', err.message)
+        );
       }
 
       res.status(201).json({
         success: true,
-        message: 'Message sent! Newton will get back to you soon.',
-        chatMessage: { id: chatMessage._id, createdAt: chatMessage.createdAt },
+        message: 'Message sent!',
+        chatMessage: {
+          id: chatMessage._id,
+          createdAt: chatMessage.createdAt,
+        },
       });
     } catch (error) {
-      console.error('Chat message error:', error);
+      console.error('Chat message error:', error.message);
       res.status(500).json({ error: 'Failed to send message.' });
     }
   }
 );
 
-router.get('/:conversationId', async (req, res) => {
+// ============================================================
+// GET /api/chat-messages/:conversationId — visitor fetches history
+// ============================================================
+router.get('/:conversationId', readRateLimiter, async (req, res) => {
   try {
-    const messages = await ChatMessage.find({
-      conversationId: req.params.conversationId,
-    })
+    const { conversationId } = req.params;
+
+    if (!isValidConversationId(conversationId)) {
+      return res.status(400).json({ error: 'Invalid conversation ID' });
+    }
+
+    const messages = await ChatMessage.find({ conversationId })
       .select('sender message adminName createdAt')
       .sort({ createdAt: 1 })
       .limit(50);
 
     res.json(messages);
   } catch (error) {
+    console.error('Fetch messages error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });

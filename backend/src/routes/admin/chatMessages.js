@@ -1,65 +1,134 @@
 import express from 'express';
+import rateLimit from 'express-rate-limit';
 import { authenticate, requireAdmin } from '../../middleware/auth.js';
 import { ChatMessage } from '../../models/ChatMessage.js';
 import { AuditLog } from '../../models/AuditLog.js';
+import { emitNewMessage, emitMessageRead } from '../../socket/socketHandler.js';
 
 const router = express.Router();
 
-// GET – list all conversations (grouped)
-router.get('/conversations', authenticate, requireAdmin, async (req, res) => {
-  try {
-    const { page = 1, limit = 20 } = req.query;
-    const skip = (parseInt(page) - 1) * parseInt(limit);
+// ------------------------------------------------------------
+// Rate limiter for admin chat endpoints
+// ------------------------------------------------------------
+const adminChatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  message: { error: 'Too many requests. Please slow down.' },
+});
 
-    const conversations = await ChatMessage.aggregate([
-      // Group by conversationId
-      {
-        $sort: { createdAt: -1 },
-      },
-      {
-        $group: {
-          _id: '$conversationId',
-          lastMessage: { $first: '$message' },
-          lastSender: { $first: '$sender' },
-          lastMessageAt: { $first: '$createdAt' },
-          visitorName: { $first: '$visitorName' },
-          visitorEmail: { $first: '$visitorEmail' },
-          unreadCount: {
-            $sum: {
-              $cond: [
-                { $and: [{ $eq: ['$sender', 'visitor'] }, { $eq: ['$read', false] }] },
-                1,
-                0,
-              ],
+// ------------------------------------------------------------
+// Helpers
+// ------------------------------------------------------------
+const isValidConversationId = (id) =>
+  typeof id === 'string' && id.length > 0 && id.length <= 100;
+
+const safeInt = (value, fallback, min, max) => {
+  const n = parseInt(value, 10);
+  if (Number.isNaN(n)) return fallback;
+  return Math.min(Math.max(n, min), max);
+};
+
+// ============================================================
+// GET /conversations — list all conversations (grouped + paginated)
+// ============================================================
+router.get('/conversations', authenticate, requireAdmin, adminChatLimiter, async (req, res) => {
+  try {
+    const page = safeInt(req.query.page, 1, 1, 10_000);
+    const limit = safeInt(req.query.limit, 50, 1, 100);
+    const skip = (page - 1) * limit;
+
+    const [conversations, totalResult] = await Promise.all([
+      ChatMessage.aggregate([
+        { $sort: { createdAt: -1 } },
+        {
+          $group: {
+            _id: '$conversationId',
+            lastMessage: { $first: '$message' },
+            lastSender: { $first: '$sender' },
+            lastMessageAt: { $first: '$createdAt' },
+            allNames: {
+              $push: {
+                $cond: [
+                  {
+                    $and: [
+                      { $ne: ['$visitorName', null] },
+                      { $ne: ['$visitorName', ''] },
+                    ],
+                  },
+                  '$visitorName',
+                  '$$REMOVE',
+                ],
+              },
             },
+            allEmails: {
+              $push: {
+                $cond: [
+                  {
+                    $and: [
+                      { $ne: ['$visitorEmail', null] },
+                      { $ne: ['$visitorEmail', ''] },
+                    ],
+                  },
+                  '$visitorEmail',
+                  '$$REMOVE',
+                ],
+              },
+            },
+            unreadCount: {
+              $sum: {
+                $cond: [
+                  {
+                    $and: [
+                      { $eq: ['$sender', 'visitor'] },
+                      { $eq: ['$read', false] },
+                    ],
+                  },
+                  1,
+                  0,
+                ],
+              },
+            },
+            totalMessages: { $sum: 1 },
           },
-          totalMessages: { $sum: 1 },
         },
-      },
-      // Sort by most recent
-      { $sort: { lastMessageAt: -1 } },
-      { $skip: skip },
-      { $limit: parseInt(limit) },
+        {
+          $addFields: {
+            visitorName: { $arrayElemAt: ['$allNames', 0] },
+            visitorEmail: { $arrayElemAt: ['$allEmails', 0] },
+          },
+        },
+        { $project: { allNames: 0, allEmails: 0 } },
+        { $sort: { lastMessageAt: -1 } },
+        { $skip: skip },
+        { $limit: limit },
+      ]),
+      ChatMessage.aggregate([
+        { $group: { _id: '$conversationId' } },
+        { $count: 'total' },
+      ]),
     ]);
 
-    const total = await ChatMessage.distinct('conversationId').then((ids) => ids.length);
+    const total = totalResult[0]?.total || 0;
 
     res.json({
       conversations,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page,
+        limit,
         total,
-        pages: Math.ceil(total / parseInt(limit)),
+        pages: Math.ceil(total / limit),
       },
     });
   } catch (error) {
+    console.error('Conversations error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
-// GET – unread count (for sidebar badge)
-router.get('/unread-count', authenticate, requireAdmin, async (req, res) => {
+// ============================================================
+// GET /unread-count — global unread visitor messages
+// ============================================================
+router.get('/unread-count', authenticate, requireAdmin, adminChatLimiter, async (req, res) => {
   try {
     const count = await ChatMessage.countDocuments({
       sender: 'visitor',
@@ -67,40 +136,60 @@ router.get('/unread-count', authenticate, requireAdmin, async (req, res) => {
     });
     res.json({ count });
   } catch (error) {
+    console.error('Unread count error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
-// GET – messages in a conversation
-router.get('/conversation/:conversationId', authenticate, requireAdmin, async (req, res) => {
-  try {
-    const messages = await ChatMessage.find({
-      conversationId: req.params.conversationId,
-    }).sort({ createdAt: 1 });
+// ============================================================
+// GET /conversation/:conversationId — messages + mark as read
+// ============================================================
+router.get(
+  '/conversation/:conversationId',
+  authenticate,
+  requireAdmin,
+  adminChatLimiter,
+  async (req, res) => {
+    try {
+      const { conversationId } = req.params;
 
-    // Mark all visitor messages as read
-    await ChatMessage.updateMany(
-      {
-        conversationId: req.params.conversationId,
-        sender: 'visitor',
-        read: false,
-      },
-      { $set: { read: true } }
-    );
+      if (!isValidConversationId(conversationId)) {
+        return res.status(400).json({ error: 'Invalid conversation ID' });
+      }
 
-    res.json(messages);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+      const messages = await ChatMessage.find({ conversationId }).sort({ createdAt: 1 });
+
+      await ChatMessage.updateMany(
+        { conversationId, sender: 'visitor', read: false },
+        { $set: { read: true } }
+      );
+
+      const io = req.app.get('io');
+      if (io) emitMessageRead(io, conversationId);
+
+      res.json(messages);
+    } catch (error) {
+      console.error('Fetch conversation error:', error.message);
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
-// POST – admin replies to a conversation
-router.post('/reply', authenticate, requireAdmin, async (req, res) => {
+// ============================================================
+// POST /reply — admin replies to a conversation
+// ============================================================
+router.post('/reply', authenticate, requireAdmin, adminChatLimiter, async (req, res) => {
   try {
     const { conversationId, message } = req.body;
 
-    if (!conversationId || !message?.trim()) {
-      return res.status(400).json({ error: 'Conversation ID and message required' });
+    if (!isValidConversationId(conversationId)) {
+      return res.status(400).json({ error: 'Valid conversation ID required' });
+    }
+    if (!message || !message.trim()) {
+      return res.status(400).json({ error: 'Message is required' });
+    }
+    if (message.length > 2000) {
+      return res.status(400).json({ error: 'Message too long (max 2000 chars)' });
     }
 
     const reply = await ChatMessage.create({
@@ -108,9 +197,21 @@ router.post('/reply', authenticate, requireAdmin, async (req, res) => {
       message: message.trim(),
       sender: 'admin',
       adminId: req.admin._id,
-      adminName: req.admin.name || 'Newton Asha',
+      adminName: req.admin.name || req.admin.displayName || 'Newton Asha',
       read: true,
     });
+
+    const io = req.app.get('io');
+    if (io) {
+      emitNewMessage(io, {
+        _id: reply._id,
+        conversationId: reply.conversationId,
+        message: reply.message,
+        sender: reply.sender,
+        adminName: reply.adminName,
+        createdAt: reply.createdAt,
+      });
+    }
 
     await AuditLog.create({
       admin: req.admin._id,
@@ -123,31 +224,45 @@ router.post('/reply', authenticate, requireAdmin, async (req, res) => {
 
     res.status(201).json(reply);
   } catch (error) {
+    console.error('Reply error:', error.message);
     res.status(500).json({ error: error.message });
   }
 });
 
-// DELETE – delete a conversation
-router.delete('/conversation/:conversationId', authenticate, requireAdmin, async (req, res) => {
-  try {
-    const result = await ChatMessage.deleteMany({
-      conversationId: req.params.conversationId,
-    });
+// ============================================================
+// DELETE /conversation/:conversationId
+// ============================================================
+router.delete(
+  '/conversation/:conversationId',
+  authenticate,
+  requireAdmin,
+  adminChatLimiter,
+  async (req, res) => {
+    try {
+      const { conversationId } = req.params;
 
-    await AuditLog.create({
-      admin: req.admin._id,
-      action: 'delete_conversation',
-      resource: 'chat',
-      resourceId: req.params.conversationId,
-      details: { deletedCount: result.deletedCount },
-      ipAddress: req.ip,
-      userAgent: req.headers['user-agent'],
-    });
+      if (!isValidConversationId(conversationId)) {
+        return res.status(400).json({ error: 'Invalid conversation ID' });
+      }
 
-    res.json({ success: true, deletedCount: result.deletedCount });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
+      const result = await ChatMessage.deleteMany({ conversationId });
+
+      await AuditLog.create({
+        admin: req.admin._id,
+        action: 'delete_conversation',
+        resource: 'chat',
+        resourceId: conversationId,
+        details: { deletedCount: result.deletedCount },
+        ipAddress: req.ip,
+        userAgent: req.headers['user-agent'],
+      });
+
+      res.json({ success: true, deletedCount: result.deletedCount });
+    } catch (error) {
+      console.error('Delete conversation error:', error.message);
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
 export default router;

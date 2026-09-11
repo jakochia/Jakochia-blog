@@ -1,13 +1,19 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
-import './styles/index.css';   // ← this must be present
+import { SocketProvider } from './context/SocketContext';
+import './styles/index.css';
 
 const root = document.getElementById('root');
-if (root) {
+
+if (!root) {
+  console.error('Root element not found!');
+} else {
   ReactDOM.createRoot(root).render(
     <React.StrictMode>
-      <App />
+      <SocketProvider>
+        <App />
+      </SocketProvider>
     </React.StrictMode>
   );
 }

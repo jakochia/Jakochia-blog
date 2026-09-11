@@ -1,6 +1,6 @@
 import express from 'express';
 
-// Public routes
+// ============ PUBLIC ROUTES ============
 import publicPosts from './public/posts.js';
 import publicCategories from './public/categories.js';
 import publicTags from './public/tags.js';
@@ -13,7 +13,7 @@ import publicContact from './public/contact.js';
 import publicChat from './public/chat.js';                    // ✅ AI Chat
 import publicChatMessages from './public/chatMessages.js';    // ✅ Human Chat
 
-// Admin routes
+// ============ ADMIN ROUTES ============
 import adminAuth from './admin/auth.js';
 import adminDashboard from './admin/dashboard.js';
 import adminPosts from './admin/posts.js';
@@ -37,8 +37,12 @@ router.use('/reactions', publicReactions);
 router.use('/newsletter', publicNewsletter);
 router.use('/search', publicSearch);
 router.use('/contact', publicContact);
-router.use('/ai/chat', publicChat);                        // ✅ AI Chat
-router.use('/chat-messages', publicChatMessages);          // ✅ Human Chat
+
+// ✅ AI Chat mounted at /api/ai/chat
+router.use('/ai/chat', publicChat);
+
+// ✅ Human Chat mounted at /api/chat-messages
+router.use('/chat-messages', publicChatMessages);
 
 // ============ ADMIN ROUTES ============
 router.use('/admin/auth', adminAuth);

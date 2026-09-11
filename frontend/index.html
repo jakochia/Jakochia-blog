@@ -5,20 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     
     <!-- ============================================ -->
-    <!-- FAVICONS -->
+    <!-- FAVICONS (Google prefers PNG 48x48 and up) -->
     <!-- ============================================ -->
-    <!-- Primary favicon (SVG – modern browsers) -->
+    <!-- Primary PNG favicons for Google Search -->
+    <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48x48.png" />
+    <link rel="icon" type="image/png" sizes="96x96" href="/favicon-96x96.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/favicon-192x192.png" />
+    
+    <!-- SVG for modern browsers -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     
-    <!-- PNG fallback for older browsers -->
+    <!-- Legacy fallbacks -->
     <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
     <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="shortcut icon" href="/favicon.ico" />
     
     <!-- Apple Touch Icon (iOS / Safari) -->
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     
     <!-- ============================================ -->
-    <!-- SEO & SOCIAL SHARING (Open Graph / Twitter) -->
+    <!-- SEO & SOCIAL SHARING -->
     <!-- ============================================ -->
     <title>Jakochia Blog – Code. Build. Learn. Share.</title>
     <meta name="description" content="Code. Build. Learn. Share. – Exploring software engineering, networking, cybersecurity, AI and technology. By Newton Asha." />
@@ -47,15 +53,8 @@
     <!-- THEME COLOR (for mobile browsers) -->
     <!-- ============================================ -->
     <meta name="theme-color" content="#0a0a0f" />
-    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    
-    <!-- ============================================ -->
-    <!-- MANIFEST (for PWA – optional but good for future) -->
-    <!-- ============================================ -->
-    <link rel="manifest" href="/manifest.json" />
-    
-    <title>Jakochia Blog – Code. Build. Learn. Share.</title>
   </head>
   <body>
     <div id="root"></div>

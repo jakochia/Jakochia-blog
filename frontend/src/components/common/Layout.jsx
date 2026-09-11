@@ -7,6 +7,8 @@ import { useTheme } from '../../context/ThemeContext';
 import Header from './Header';
 import Footer from './Footer';
 import ScrollToTop from './ScrollToTop';
+import ChatWidget from '../chat/ChatWidget';
+
 
 const Layout = ({ children }) => {
   const { theme } = useTheme();
@@ -60,6 +62,7 @@ const Layout = ({ children }) => {
       </main>
       <Footer />
       <ScrollToTop />
+      <ChatWidget />
 
       {/* Fade-in keyframes */}
       <style>{`

@@ -35,6 +35,7 @@ import AdminMedia from './pages/admin/AdminMedia';
 import AdminProjects from './pages/admin/AdminProjects';
 import AdminSettings from './pages/admin/AdminSettings';
 import AdminNewsletter from './pages/admin/AdminNewsletter';
+import AdminInbox from './pages/admin/AdminInbox';
 
 function App() {
   return (
@@ -75,6 +76,7 @@ function App() {
             <Route path="/admin/projects" element={<AdminRoute><AdminProjects /></AdminRoute>} />
             <Route path="/admin/settings" element={<AdminRoute><AdminSettings /></AdminRoute>} />
             <Route path="/admin/newsletter" element={<AdminRoute><AdminNewsletter /></AdminRoute>} />
+            <Route path="/admin/inbox" element={<AdminRoute><AdminInbox /></AdminRoute>} />
 
             {/* ==================== 404 ==================== */}
             <Route path="*" element={

@@ -9,6 +9,9 @@ import publicComments from './public/comments.js';
 import publicReactions from './public/reactions.js';
 import publicNewsletter from './public/newsletter.js';
 import publicSearch from './public/search.js';
+import publicContact from './public/contact.js';
+import publicChat from './public/chat.js';
+import publicChatMessages from './public/chatMessages.js';   // ← ADD THIS
 
 // Admin routes
 import adminAuth from './admin/auth.js';
@@ -19,13 +22,10 @@ import adminSubscribers from './admin/subscribers.js';
 import adminMedia from './admin/media.js';
 import adminProjects from './admin/projects.js';
 import adminSettings from './admin/settings.js';
-import adminNewsletter from './admin/newsletter.js'; // <-- NEW
-import publicContact from './public/contact.js';
-import publicRss from './public/rss.js';
-import publicSitemap from './public/sitemap.js';
+import adminNewsletter from './admin/newsletter.js';
+import adminChatMessages from './admin/chatMessages.js';     // ← ADD THIS
 
-// Create router
-const router = express.Router(); // <-- MUST BE DEFINED BEFORE USING
+const router = express.Router();
 
 // Public routes
 router.use('/posts', publicPosts);
@@ -37,8 +37,8 @@ router.use('/reactions', publicReactions);
 router.use('/newsletter', publicNewsletter);
 router.use('/search', publicSearch);
 router.use('/contact', publicContact);
-router.use('/rss', publicRss);
-router.use('/sitemap', publicSitemap);
+router.use('/chat', publicChat);
+router.use('/chat-messages', publicChatMessages);           // ← ADD THIS
 
 // Admin routes (protected)
 router.use('/admin/auth', adminAuth);
@@ -49,6 +49,7 @@ router.use('/admin/subscribers', adminSubscribers);
 router.use('/admin/media', adminMedia);
 router.use('/admin/projects', adminProjects);
 router.use('/admin/settings', adminSettings);
-router.use('/admin/newsletter', adminNewsletter); // <-- NEW
+router.use('/admin/newsletter', adminNewsletter);
+router.use('/admin/chat-messages', adminChatMessages);       // ← ADD THIS
 
 export default router;

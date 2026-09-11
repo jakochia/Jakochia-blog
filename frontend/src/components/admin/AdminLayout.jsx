@@ -17,6 +17,7 @@ const AdminLayout = ({ children, title }) => {
     { to: '/admin/tags', label: 'Tags', icon: '🏷️' },
     { to: '/admin/comments', label: 'Comments', icon: '💬' },
     { to: '/admin/subscribers', label: 'Subscribers', icon: '📧' },
+    { to: '/admin/inbox', label: 'Inbox', icon: '💬' },
     { to: '/admin/media', label: 'Media', icon: '🖼️' },
     { to: '/admin/projects', label: 'Projects', icon: '🚀' },
     { to: '/admin/settings', label: 'Settings', icon: '⚙️' },
